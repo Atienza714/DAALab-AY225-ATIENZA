@@ -34,29 +34,18 @@ def bubble_sort_descending(arr):
 
 if __name__ == "__main__":
 
-  
-
     script_dir = os.path.dirname(os.path.abspath(__file__))
-
-    
 
     subfolder = 'PRELIM_LAB WORK 1-ATIENZA' 
 
     file_path = os.path.join(script_dir, subfolder, 'dataset.txt')
-
-
-
-   
 
     if not os.path.exists(file_path):
 
         file_path = os.path.join(script_dir, 'dataset.txt')
 
 
-
     try:
-
-       
 
         print(f"Attempting to load data from: {file_path}")
 
@@ -65,22 +54,15 @@ if __name__ == "__main__":
             data = [int(line.strip()) for line in file if line.strip()]
 
         
-
         print(f"Successfully loaded {len(data)} items. Sorting...")
 
-
-
-      
 
         sorted_list, time_spent = bubble_sort_descending(data)
 
         
-
         for value in sorted_list:
 
             print(value)
-
-            
 
         print("\n" + "="*30)
 
@@ -91,8 +73,7 @@ if __name__ == "__main__":
         print(f"TIME SPENT: {time_spent:.6f} seconds")
 
         print("="*30)
-
-
+    
 
     except FileNotFoundError:
 
