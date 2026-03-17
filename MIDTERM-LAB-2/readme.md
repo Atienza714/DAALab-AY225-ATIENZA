@@ -1,5 +1,5 @@
 # Algorithm Approach
-For the routing logic, I used Dijkstra’s Algorithm. Since this activity deals with different "weights" like distance, time, and fuel, Dijkstra’s is the most efficient way to find the absolute shortest path from point A to point B. It works by checking all possible connections and picking the one with the lowest total cost. Because all the values in my Cavite city data are positive, the algorithm always finds the most optimal route without any issues.
+For the routing logic, I used Dijkstra’s Algorithm. Since this activity deals with different "weights" like distance, time, and fuel, Dijkstra’s is the most efficient way to find the absolute shortest path from point A to point B. It works by checking all possible connections and picking the one with the lowest total cost. Because all the values in the data table are positive, the algorithm always finds the most optimal route without any issues.
 
 
 # Challenges Faced
