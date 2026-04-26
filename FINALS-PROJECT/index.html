@@ -265,9 +265,34 @@ window.changePage = function(page) { /* TODO by Student 1 */ };
 function populateSelectors() { /* TODO by Student 1 */ }
 
 // ========================== ZONE 2 – STUDENT 2 (feature/viz-analysis) ==========================
-function onDataReady() { /* TODO by Student 2 */ }
-function renderCharts() { /* TODO by Student 2 */ }
-function renderBarChart() { /* TODO by Student 2 */ }
+function onDataReady() {
+  renderCharts();
+  updateInsights();
+}
+
+function renderCharts() {
+  renderBarChart();
+  renderScatterPlot();
+}
+
+function renderBarChart() {
+  const col = document.getElementById('numericColSelect').value;
+  if (!col || !filteredData.length) return;
+  const top = [...filteredData].sort((a,b) => (b[col]||0) - (a[col]||0)).slice(0,10);
+  const labelCol = headers.find(h => typeof top[0]?.[h] === 'string') || headers[0];
+  const labels = top.map(row => {
+    let label = String(row[labelCol] || '');
+    return label.length > 18 ? label.slice(0,15)+'…' : label;
+  });
+  const data = top.map(row => row[col]);
+  const ctx = document.getElementById('topBarChart').getContext('2d');
+  if (barChart) barChart.destroy();
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: col, data, backgroundColor: '#facc15', borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+  });
+}
 function renderScatterPlot() { /* TODO by Student 2 */ }
 function updateInsights() { /* TODO by Student 2 */ }
 
