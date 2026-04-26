@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataPulse Explorer – Collaborative CSV Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* CSS – same as the modern dark design from earlier */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(145deg, #0a0e1a 0%, #101624 100%);
+      font-family: 'Inter', sans-serif;
+      color: #eef2ff;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(18, 25, 45, 0.65);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+      border: 1px solid rgba(72, 187, 255, 0.2);
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, #6ee7ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subhead {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      border-left: 3px solid #3b82f6;
+      padding-left: 1rem;
+    }
+    .upload-zone {
+      border: 2px dashed #3b82f6;
+      border-radius: 1.5rem;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(59,130,246,0.05);
+      margin-bottom: 2rem;
+      transition: all 0.2s;
+    }
+    .upload-zone:hover {
+      border-color: #60a5fa;
+      background: rgba(59,130,246,0.12);
+      transform: scale(0.99);
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .stat-card {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid #1e293b;
+      border-radius: 1rem;
+      padding: 1.2rem;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #facc15;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      background: #0f172a;
+      margin: 1.5rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th {
+      background: #1e293b;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      color: #e2e8f0;
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+    tr:hover td { background: #1e2a3e; }
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .chart-card {
+      background: #0f172a;
+      border-radius: 1rem;
+      padding: 1rem;
+      border: 1px solid #1e293b;
+    }
+    .chart-card h3 { color: #facc15; margin-bottom: 1rem; }
+    canvas { max-height: 280px; width: 100%; }
+    .insight-panel {
+      background: linear-gradient(135deg, #0f172a, #0a0f1c);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      border-left: 4px solid #3b82f6;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+    }
+    button:hover { background: #2563eb; }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .badge {
+      background: #3b82f6;
+      font-size: 0.65rem;
+      border-radius: 1rem;
+      padding: 0.2rem 0.8rem;
+      margin-left: 0.5rem;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.7rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 DataPulse Explorer <span class="badge">2‑Student Collab</span></h1>
+  <div class="subhead">Drag & drop any CSV – Student 1: data engine, table, pagination | Student 2: charts, correlations, insights</div>
+
+  <div id="uploadZone" class="upload-zone" onclick="document.getElementById('csvFile').click()" ondragover="event.preventDefault();" ondrop="handleDrop(event)">
+    <div class="upload-icon">📂</div>
+    <p>Drop a CSV file here or <strong>click to browse</strong></p>
+    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(this.files[0])">
+  </div>
+
+  <div id="progressContainer" style="display:none; margin:1rem 0;">
+    <div style="background:#1e293b; border-radius:20px; height:6px; overflow:hidden;">
+      <div id="progressBar" style="width:0%; background:#facc15; height:6px;"></div>
+    </div>
+    <div id="progressText" style="font-size:0.7rem;">Parsing...</div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="flex-between">
+      <div>
+        <input type="text" id="searchInput" placeholder="🔍 Search table..." style="padding:0.5rem; border-radius:2rem; background:#0f172a; border:1px solid #334155; color:white;">
+        <button id="searchBtn">Search</button>
+      </div>
+      <div>
+        <label>Rows per page: </label>
+        <select id="pageSizeSelect">
+          <option value="15">15</option>
+          <option value="30" selected>30</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="dataTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div id="pagination" style="display:flex; justify-content:center; gap:8px; margin:1rem 0;"></div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>📈 Top 10 Values</h3>
+        <select id="numericColSelect"></select>
+        <canvas id="topBarChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>🔵 Scatter Plot</h3>
+        <select id="scatterX"></select>
+        <select id="scatterY"></select>
+        <button id="updateScatterBtn">Plot</button>
+        <canvas id="scatterChart"></canvas>
+      </div>
+    </div>
+    <div class="insight-panel">
+      <h3>📌 Statistical Summary</h3>
+      <div id="insightText">Load a CSV to see insights.</div>
+    </div>
+  </div>
+  <footer>Built collaboratively with Git branches & PRs</footer>
+</div>
+
+<script>
+// ========================== ZONE 0 – SHARED VARIABLES (do not modify) ==========================
+let fullData = [];
+let headers = [];
+let numericCols = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 30;
+let searchTerm = "";
+let barChart, scatterChart;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+}
+function formatCell(v) {
+  if (v===null||v===undefined) return "—";
+  if (typeof v==='number') return v.toLocaleString();
+  return String(v).length>50 ? String(v).slice(0,47)+"..." : String(v);
+}
+function mean(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
+function pearsonCorrelation(x,y) {
+  let n=x.length, sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+  for(let i=0;i<n;i++){ sx+=x[i]; sy+=y[i]; sxy+=x[i]*y[i]; sx2+=x[i]*x[i]; sy2+=y[i]*y[i]; }
+  let denom=Math.sqrt((sx2-sx*sx/n)*(sy2-sy*sy/n));
+  return denom===0?0:(sxy-sx*sy/n)/denom;
+}
+
+// ========================== ZONE 1 – STUDENT 1 (feature/data-engine) ==========================
+// All functions below are initially empty – you will implement them.
+function loadCSV(file) { /* TODO by Student 1 */ }
+function finalizeDataset() { /* TODO by Student 1 */ }
+function renderTable() { /* TODO by Student 1 */ }
+function renderPagination() { /* TODO by Student 1 */ }
+function updateStatsCards() { /* TODO by Student 1 */ }
+function applyFilterAndRender() { /* TODO by Student 1 */ }
+window.changePage = function(page) { /* TODO by Student 1 */ };
+function populateSelectors() { /* TODO by Student 1 */ }
+
+// ========================== ZONE 2 – STUDENT 2 (feature/viz-analysis) ==========================
+function onDataReady() { /* TODO by Student 2 */ }
+function renderCharts() { /* TODO by Student 2 */ }
+function renderBarChart() { /* TODO by Student 2 */ }
+function renderScatterPlot() { /* TODO by Student 2 */ }
+function updateInsights() { /* TODO by Student 2 */ }
+
+// Event listeners (Student 1 must ensure these work after implementing functions)
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('searchBtn')?.addEventListener('click', () => {
+    searchTerm = document.getElementById('searchInput').value;
+    applyFilterAndRender();
+  });
+  document.getElementById('pageSizeSelect')?.addEventListener('change', (e) => {
+    pageSize = parseInt(e.target.value);
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+  });
+  document.getElementById('updateScatterBtn')?.addEventListener('click', () => renderScatterPlot());
+  document.getElementById('numericColSelect')?.addEventListener('change', () => renderBarChart());
+});
+function handleDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) loadCSV(file);
+  else alert("Please drop a CSV file.");
+}
+document.getElementById('uploadZone')?.addEventListener('dragover', e => e.preventDefault());
+</script>
+</body>
+</html>
