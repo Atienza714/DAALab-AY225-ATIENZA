@@ -265,6 +265,79 @@ window.changePage = function(page) { /* TODO by Student 1 */ };
 function populateSelectors() { /* TODO by Student 1 */ }
 
 // ========================== ZONE 2 – STUDENT 2 (feature/viz-analysis) ==========================
+function onDataReady() {
+  renderCharts();
+  updateInsights();
+}
+
+function renderCharts() {
+  renderBarChart();
+  renderScatterPlot();
+}
+
+function renderBarChart() {
+  const col = document.getElementById('numericColSelect').value;
+  if (!col || !filteredData.length) return;
+  const top = [...filteredData].sort((a,b) => (b[col]||0) - (a[col]||0)).slice(0,10);
+  const labelCol = headers.find(h => typeof top[0]?.[h] === 'string') || headers[0];
+  const labels = top.map(row => {
+    let label = String(row[labelCol] || '');
+    return label.length > 18 ? label.slice(0,15)+'…' : label;
+  });
+  const data = top.map(row => row[col]);
+  const ctx = document.getElementById('topBarChart').getContext('2d');
+  if (barChart) barChart.destroy();
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: col, data, backgroundColor: '#facc15', borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+  });
+}
+function renderScatterPlot() {
+  const xCol = document.getElementById('scatterX').value;
+  const yCol = document.getElementById('scatterY').value;
+  if (!xCol || !yCol || !filteredData.length) return;
+  const points = filteredData.filter(row => typeof row[xCol] === 'number' && typeof row[yCol] === 'number')
+                           .map(row => ({ x: row[xCol], y: row[yCol] }));
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  if (scatterChart) scatterChart.destroy();
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets: [{ label: `${xCol} vs ${yCol}`, data: points, backgroundColor: '#3b82f6', pointRadius: 5 }] },
+    options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${xCol}: ${ctx.parsed.x}, ${yCol}: ${ctx.parsed.y}` } } } }
+  });
+}
+
+function updateInsights() {
+  if (!numericCols.length) {
+    document.getElementById('insightText').innerHTML = "No numeric columns to analyze.";
+    return;
+  }
+  let means = {};
+  for (let col of numericCols) {
+    const values = filteredData.map(r => r[col]).filter(v => typeof v === 'number' && isFinite(v));
+    if (values.length) means[col] = mean(values);
+  }
+  const highestMeanCol = Object.keys(means).reduce((a,b) => means[a] > means[b] ? a : b, numericCols[0]);
+  let corrText = "";
+  if (numericCols.length >= 2) {
+    const col1 = numericCols[0], col2 = numericCols[1];
+    const pairs = filteredData.filter(r => typeof r[col1] === 'number' && typeof r[col2] === 'number')
+                              .map(r => [r[col1], r[col2]]);
+    if (pairs.length) {
+      const x = pairs.map(p => p[0]), y = pairs.map(p => p[1]);
+      const r = pearsonCorrelation(x, y);
+      corrText = `Pearson correlation <strong>r = ${r.toFixed(3)}</strong> (${Math.abs(r)>=0.7?'strong':Math.abs(r)>=0.4?'moderate':'weak'} ${r>0?'positive':'negative'} relation).<br>`;
+    }
+  }
+  const insightHtml = `
+    <strong>📐 Summary</strong><br>
+    Highest average column: <span style="color:#facc15;">${highestMeanCol}</span> (≈ ${means[highestMeanCol].toFixed(2)}).<br>
+    ${corrText}
+    💡 Use the scatter plot to explore relationships. Table supports search & pagination.
+  `;
+  document.getElementById('insightText').innerHTML = insightHtml;
+}
 function onDataReady() { /* TODO by Student 2 */ }
 function renderCharts() { /* TODO by Student 2 */ }
 function renderBarChart() { /* TODO by Student 2 */ }
