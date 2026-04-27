@@ -159,7 +159,7 @@
 </head>
 <body>
 <div class="container">
-  <<h1>🏥 World Bank Health & Nutrition Explorer <span class="badge">2‑Student Collab</span></h1>
+  <h1>🏥 World Bank Health & Nutrition Explorer <span class="badge">2‑Student Collab</span></h1>
   <div class="subhead">Drag & drop any CSV – Student 1: data engine, table, pagination | Student 2: charts, correlations, insights</div>
 
   <div id="uploadZone" class="upload-zone" onclick="document.getElementById('csvFile').click()" ondragover="event.preventDefault();" ondrop="handleDrop(event)">
@@ -465,11 +465,7 @@ function updateInsights() {
   `;
   document.getElementById('insightText').innerHTML = insightHtml;
 }
-function onDataReady() { /* TODO by Student 2 */ }
-function renderCharts() { /* TODO by Student 2 */ }
-function renderBarChart() { /* TODO by Student 2 */ }
-function renderScatterPlot() { /* TODO by Student 2 */ }
-function updateInsights() { /* TODO by Student 2 */ }
+
 
 // Event listeners (Student 1 must ensure these work after implementing functions)
 document.addEventListener('DOMContentLoaded', () => {
