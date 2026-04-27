@@ -254,15 +254,142 @@ function pearsonCorrelation(x,y) {
 }
 
 // ========================== ZONE 1 – STUDENT 1 (feature/data-engine) ==========================
-// All functions below are initially empty – you will implement them.
-function loadCSV(file) { /* TODO by Student 1 */ }
-function finalizeDataset() { /* TODO by Student 1 */ }
-function renderTable() { /* TODO by Student 1 */ }
-function renderPagination() { /* TODO by Student 1 */ }
-function updateStatsCards() { /* TODO by Student 1 */ }
-function applyFilterAndRender() { /* TODO by Student 1 */ }
-window.changePage = function(page) { /* TODO by Student 1 */ };
-function populateSelectors() { /* TODO by Student 1 */ }
+// ========================== ZONE 1 – STUDENT 1 IMPLEMENTATION ==========================
+function loadCSV(file) {
+  if (!file) return;
+  const progressDiv = document.getElementById('progressContainer');
+  progressDiv.style.display = 'block';
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  
+  fullData = [];
+  headers = [];
+  
+  Papa.parse(file, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    chunk: (results) => {
+      if (headers.length === 0 && results.meta.fields) headers = results.meta.fields;
+      fullData = fullData.concat(results.data);
+      const estRows = results.meta.estimatedRowCount || fullData.length + 100;
+      const pct = Math.min((fullData.length / estRows) * 100, 99);
+      progressBar.style.width = pct + '%';
+      progressText.innerText = `Loaded ${fullData.length.toLocaleString()} rows...`;
+    },
+    complete: () => {
+      progressBar.style.width = '100%';
+      progressText.innerText = 'Complete! Rendering...';
+      setTimeout(() => {
+        progressDiv.style.display = 'none';
+        finalizeDataset();
+      }, 300);
+    },
+    error: (err) => {
+      alert("Parse error: " + err.message);
+      progressDiv.style.display = 'none';
+    }
+  });
+}
+
+function finalizeDataset() {
+  fullData = fullData.filter(row => row && Object.values(row).some(v => v !== null && v !== undefined && v !== ''));
+  if (fullData.length === 0) return alert("No valid data found.");
+  
+  numericCols = headers.filter(col => {
+    let numCount = 0, total = 0;
+    for (let i = 0; i < Math.min(200, fullData.length); i++) {
+      let val = fullData[i][col];
+      if (val !== null && val !== undefined && val !== '') {
+        total++;
+        if (typeof val === 'number') numCount++;
+      }
+    }
+    return total > 0 && (numCount / total) > 0.6;
+  });
+  
+  filteredData = [...fullData];
+  applyFilterAndRender();
+  populateSelectors();
+  onDataReady();   // tell Student 2 that data is ready
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = filteredData.slice(start, start + pageSize);
+  document.getElementById('tableHead').innerHTML = `<tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = pageRows.map(row => `<tr>${headers.map(h => `<td>${escapeHtml(formatCell(row[h]))}</td>`).join('')}</tr>`).join('');
+  renderPagination();
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const container = document.getElementById('pagination');
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  let html = `<button ${currentPage===1?'disabled':''} onclick="changePage(1)">⏮ First</button>
+              <button ${currentPage===1?'disabled':''} onclick="changePage(${currentPage-1})">◀ Prev</button>`;
+  for (let i=Math.max(1, currentPage-2); i<=Math.min(totalPages, currentPage+2); i++) {
+    html += `<button class="${i===currentPage?'btn':''}" onclick="changePage(${i})" style="${i===currentPage?'background:#facc15; color:#000;':''}">${i}</button>`;
+  }
+  html += `<button ${currentPage===totalPages?'disabled':''} onclick="changePage(${currentPage+1})">Next ▶</button>
+           <button ${currentPage===totalPages?'disabled':''} onclick="changePage(${totalPages})">Last ⏭</button>`;
+  container.innerHTML = html;
+}
+
+function updateStatsCards() {
+  const rowsCount = filteredData.length;
+  const colCount = headers.length;
+  const numCount = numericCols.length;
+  let nonNull = 0, totalCells = 0;
+  const sampleRows = filteredData.slice(0, 500);
+  for (let row of sampleRows) {
+    for (let h of headers) {
+      totalCells++;
+      if (row[h] !== null && row[h] !== undefined && row[h] !== '') nonNull++;
+    }
+  }
+  const completeness = totalCells ? Math.round((nonNull / totalCells) * 100) : 0;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Rows</div><div class="stat-value">${rowsCount.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Columns</div><div class="stat-value">${colCount}</div></div>
+    <div class="stat-card"><div class="stat-label">Numeric Columns</div><div class="stat-value">${numCount}</div></div>
+    <div class="stat-card"><div class="stat-label">Completeness*</div><div class="stat-value">${completeness}%</div></div>
+  `;
+}
+
+function applyFilterAndRender() {
+  if (searchTerm.trim() === "") {
+    filteredData = [...fullData];
+  } else {
+    const term = searchTerm.toLowerCase();
+    filteredData = fullData.filter(row => 
+      Object.values(row).some(v => String(v).toLowerCase().includes(term))
+    );
+  }
+  currentPage = 1;
+  renderTable();
+  updateStatsCards();
+  onDataReady();   // refresh Student 2's charts/insights
+}
+
+window.changePage = function(page) {
+  currentPage = page;
+  renderTable();
+};
+
+function populateSelectors() {
+  const numSelect = document.getElementById('numericColSelect');
+  const xSelect = document.getElementById('scatterX');
+  const ySelect = document.getElementById('scatterY');
+  const options = numericCols.map(col => `<option value="${escapeHtml(col)}">${escapeHtml(col)}</option>`);
+  numSelect.innerHTML = options;
+  xSelect.innerHTML = options;
+  ySelect.innerHTML = options;
+  if (xSelect.options.length) xSelect.selectedIndex = 0;
+  if (ySelect.options.length) ySelect.selectedIndex = Math.min(1, ySelect.options.length-1);
+}
 
 // ========================== ZONE 2 – STUDENT 2 (feature/viz-analysis) ==========================
 function onDataReady() {
