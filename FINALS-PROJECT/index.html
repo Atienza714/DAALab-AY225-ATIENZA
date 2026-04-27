@@ -303,8 +303,8 @@ function renderScatterPlot() {
   if (scatterChart) scatterChart.destroy();
   scatterChart = new Chart(ctx, {
     type: 'scatter',
-    data: { datasets: [{ label: ${xCol} vs ${yCol}, data: points, backgroundColor: '#3b82f6', pointRadius: 5 }] },
-    options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => ${xCol}: ${ctx.parsed.x}, ${yCol}: ${ctx.parsed.y} } } } }
+    data: { datasets: [{ label: `${xCol} vs ${yCol}`, data: points, backgroundColor: '#3b82f6', pointRadius: 5 }] },
+    options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${xCol}: ${ctx.parsed.x}, ${yCol}: ${ctx.parsed.y}` } } } }
   });
 }
 
@@ -327,7 +327,7 @@ function updateInsights() {
     if (pairs.length) {
       const x = pairs.map(p => p[0]), y = pairs.map(p => p[1]);
       const r = pearsonCorrelation(x, y);
-      corrText = Pearson correlation <strong>r = ${r.toFixed(3)}</strong> (${Math.abs(r)>=0.7?'strong':Math.abs(r)>=0.4?'moderate':'weak'} ${r>0?'positive':'negative'} relation). ;
+      corrText = `Pearson correlation <strong>r = ${r.toFixed(3)}</strong> (${Math.abs(r)>=0.7?'strong':Math.abs(r)>=0.4?'moderate':'weak'} ${r>0?'positive':'negative'} relation).<br>`;
     }
   }
   const insightHtml = `
@@ -338,6 +338,11 @@ function updateInsights() {
   `;
   document.getElementById('insightText').innerHTML = insightHtml;
 }
+function onDataReady() { /* TODO by Student 2 */ }
+function renderCharts() { /* TODO by Student 2 */ }
+function renderBarChart() { /* TODO by Student 2 */ }
+function renderScatterPlot() { /* TODO by Student 2 */ }
+function updateInsights() { /* TODO by Student 2 */ }
 
 // Event listeners (Student 1 must ensure these work after implementing functions)
 document.addEventListener('DOMContentLoaded', () => {
